@@ -1,5 +1,5 @@
 # Juice and Feel
-**Juice**, or **game feel**, is all about giving feedback to confirm a player's actions and simply making pushing a button more satisfying. For games where flow and feeling matter, juice is the thing that makes the player understand your game without reading dials and understanding numbers. Juice gives a game life and soul that makes the player feel like a part of the world. Juice is what makes a game feel fun without actually making any mechanical difference. And juice might just be what makes or breaks your game.
+**Juice**, or **game feel**, is the science and art of making pushing a button viscerally satisfying. Well, more precisely it's about giving feedback to confirm the player's actions. For games where flow and feeling matter, juice is the thing that makes the player understand your game without reading dials and processing numbers. Juice gives a game life and soul that makes the player feel like a part of the world. Juice is what makes a game feel fun without actually making any mechanical difference. And juice might just be what makes or breaks your game.
 
 Whenever you do something in real life you get a wide range of sensory input in return indicating that what you tried to do actually happened. That response grounds you and makes you realise the reality and weight of things. As you might guess, replicating that kind of feedback on a flatscreen is hard. To get anywhere near reality you need hyperreal effects and nerve-blasting feedback to fill in for all the missing senses, all the while walking the fine line of overloading your player and making a dry, unresponsive world.
 
@@ -9,7 +9,12 @@ On the other side of the spectrum are *execution* games test your reflexes and m
 
 For realistic first-person games, juicing is difficult and labour-intensive in practice but easier in concept, as you can model the feedback off reality to align with the player’s expectations. But a side-scrolling shooter like Fish Fight is more difficult in theory. I’d doubt you have a clear picture of how stylised two-dimensional fish running and shooting each other would look. For something so far detached from reality, you must work a lot in the same way as with symbol drawing: finding effects that represent their real-life counterparts without actually looking like them. 
 
+## Working with game feel
 The worst part about working with game feel is that it is only ever noticed if it is bad. Good game feel is only felt, never seen. If the juice is so grandiose that the player starts thinking of it, it will wear them out and possibly even make them sick if too much stuff is moving onscreen. But if there is not enough of it, the game will feel dry and lifeless. The juice is there to constantly trigger and must therefore be *just* right. 
+
+As you might have guessed, juicing games is more artsy compared to, for instance, UI design. There are certain guidelines to follow, but mostly it's lots of tuning and testing to find what really feels right. 
+
+A kind of branch of juicing regards making the world feel alive by making it respond, cause and effect, to the player's actions. Whipping up dust while running or jostling grass when walking past are common effects that give the impression of a breathing, coherent world in which all its separate parts coexist and interact. This doesn't do anything mechanically, but is equivalent to hitting a wooden crate and it not breaking. Now you maybe even shudder a bit at the thought of how lifeless, bland and plain wrong it would feel. Well, the player too has expectations on how the world should respond. Your {task} is to meet and feed into those expectations on all levels, from the core greyboxed mechanics to minute tweens and particle effects.
 
 Now, for some ways to actually squeeze some juice out of your games!
 
@@ -33,5 +38,6 @@ Fish Fight supports setting multipliers for X/Y movement, so a 1 for X and a sma
 To calculate the final scene position, the current position of every active shake is added together. That value is then capped using a logarithmic function so that if many explosives go off at once, the scene does not fly off-screen. The second logarithm (log<sub>2</sub>x) is almost linear from 0-1, and then flattens.
 
 ## Particles
-Particles like those in games rarely occur in real life, as most of us go through our daily routine avoiding high-impact situations. But games tend to be a bit more forceful and violent, and that of course means heaps of particles! Particles are a great way to create dynamic and exciting effects that further give impact and weight to actions. 
+Particles like those in games rarely occur in real life, as most of us go through our daily routine avoiding high-impact situations. But games tend to be a bit more forceful and violent, and that of course means heaps of particles! Particles are a great way to create dynamic and exciting effects that further give impact and weight to actions, but also make the world seem more alive and responsive. Sparks flying when a bullet hits a wall or dust getting whipped up when a character runs gives the impression of a more real world that responds, cause and effect, to the player's actions. 
+
 In Fish Fight, [macroquad-particles]( https://crates.io/crates/macroquad-particles) is used to handle particles. 
