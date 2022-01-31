@@ -25,9 +25,14 @@ const NAVIGATION_GRACE_TIME: f32 = 0.25;
 const NAVIGATION_BTN_WIDTH: f32 = 64.0;
 const NAVIGATION_BTN_HEIGHT: f32 = (BUTTON_MARGIN_H * 2.0) + BUTTON_FONT_SIZE;
 
+pub struct PlayerConfiguration{
+    pub character_metadata: PlayerCharacterMetadata,
+    pub is_ai: bool,
+}
+
 pub async fn show_select_characters_menu(
     player_input: &[GameInputScheme],
-) -> Vec<PlayerCharacterMetadata> {
+) -> Vec<PlayerConfiguration> {
     let mut selected_params = Vec::new();
 
     let player_cnt = player_input.len();
@@ -45,12 +50,14 @@ pub async fn show_select_characters_menu(
     let mut current_selections = Vec::new();
     let mut navigation_grace_timers = Vec::new();
     let mut animated_sprites = Vec::new();
+    let mut ai_toggles = Vec::new();
 
     for (i, character) in player_characters.iter().enumerate().take(player_cnt) {
         selected_params.push(None);
 
         current_selections.push(i);
         navigation_grace_timers.push(0.0);
+        ai_toggles.push(i == 0);
 
         let meta: AnimatedSpriteMetadata = character.sprite.clone().into();
 
@@ -94,6 +101,7 @@ pub async fn show_select_characters_menu(
             );
 
             let mut current_selection = current_selections[i] as i32;
+            let mut is_ai = ai_toggles[i];
 
             let mut should_navigate_left = false;
             let mut should_navigate_right = false;
@@ -204,6 +212,14 @@ pub async fn show_select_characters_menu(
                                 .ui(ui)
                                 || should_navigate_right;
                         }
+
+                        {
+                            let btn_position =
+                                vec2(btn_section.x + (SECTION_MARGIN / 2.0), btn_section.y);
+
+                            crate::gui::Checkbox::new(1337+i as u64, btn_position, "AI")
+                                .ui(ui, &mut is_ai);
+                        }
                     });
 
                 if should_confirm {
@@ -234,6 +250,7 @@ pub async fn show_select_characters_menu(
                 }
 
                 current_selections[i] = current_selection as usize;
+                ai_toggles[i] = is_ai;
 
                 navigation_grace_timers[i] = 0.0;
 
@@ -263,5 +280,10 @@ pub async fn show_select_characters_menu(
         next_frame().await;
     }
 
-    selected_params.into_iter().flatten().collect()
+    selected_params.into_iter().flatten().enumerate().map(|(i, character_metadata)| {
+        PlayerConfiguration{
+            character_metadata,
+            is_ai: ai_toggles[i],
+        }
+    }).collect()
 }

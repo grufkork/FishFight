@@ -1,5 +1,6 @@
 use hecs::World;
 use macroquad::prelude::*;
+//use ai::Ai;
 
 use crate::network::AccountId;
 use crate::{collect_local_input, GameInput, GameInputScheme};
@@ -8,6 +9,7 @@ use crate::{collect_local_input, GameInput, GameInputScheme};
 pub enum PlayerControllerKind {
     LocalInput(GameInputScheme),
     Network(AccountId),
+    Ai(super::ai::Ai),
 }
 
 impl PlayerControllerKind {
@@ -90,6 +92,9 @@ pub fn update_player_controllers(world: &mut World) {
             PlayerControllerKind::Network(_account_id) => {
                 // TODO: Network input
             }
+            PlayerControllerKind::Ai(mut ai) => {
+                controller.apply_input(ai.update());
+            },
         }
     }
 }

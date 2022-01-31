@@ -14,6 +14,7 @@ mod controller;
 mod events;
 mod inventory;
 mod state;
+mod ai;
 
 pub use animation::*;
 pub use character::*;
@@ -21,6 +22,7 @@ pub use controller::*;
 pub use events::*;
 pub use inventory::*;
 pub use state::*;
+pub use ai::*;
 
 use crate::physics::PhysicsBodyParams;
 
@@ -48,6 +50,7 @@ pub struct PlayerParams {
     pub index: u8,
     pub controller: PlayerControllerKind,
     pub character: PlayerCharacterMetadata,
+    pub ai: bool,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -96,6 +99,7 @@ pub fn spawn_player(
     position: Vec2,
     controller: PlayerControllerKind,
     character: PlayerCharacterMetadata,
+    ai_enabled: bool,
 ) -> Entity {
     let weapon_mount = character.weapon_mount;
 

@@ -14,7 +14,7 @@ use super::{draw_main_menu_background, GuiResources, Menu, MenuEntry, MenuResult
 
 use crate::input::update_gamepad_context;
 use crate::network::{AccountId, Api};
-use crate::player::{PlayerControllerKind, PlayerParams};
+use crate::player::{PlayerControllerKind, PlayerParams, Ai};
 use crate::{gui, is_gamepad_btn_pressed, EditorInputScheme, GameInputScheme, Map, Resources};
 
 const MENU_WIDTH: f32 = 300.0;
@@ -200,14 +200,19 @@ pub async fn show_main_menu() -> MainMenuResult {
                             let mut players = Vec::new();
 
                             for (i, &input_scheme) in player_input.iter().enumerate() {
-                                let character = player_characters.get(i).cloned().unwrap();
+                                let character = player_characters.get(i).unwrap().character_metadata.clone();
 
-                                let controller = PlayerControllerKind::LocalInput(input_scheme);
+                                let controller = if player_characters.get(i).unwrap().is_ai{
+                                    PlayerControllerKind::Ai(Ai::new())
+                                }else{   
+                                    PlayerControllerKind::LocalInput(input_scheme)
+                                };
 
                                 let params = PlayerParams {
                                     index: i as u8,
                                     controller,
                                     character,
+                                    ai: player_characters.get(i).unwrap().is_ai,
                                 };
 
                                 players.push(params);
@@ -363,11 +368,13 @@ fn network_game_ui(ui: &mut ui::Ui, _state: &mut NetworkUiState) -> Option<MainM
                     index: 0,
                     controller: PlayerControllerKind::LocalInput(GameInputScheme::KeyboardLeft),
                     character: resources.player_characters[0].clone(),
+                    ai: false,
                 },
                 PlayerParams {
                     index: 1,
                     controller: PlayerControllerKind::Network(2),
                     character: resources.player_characters[1].clone(),
+                    ai: false,
                 },
             ],
         });
@@ -384,11 +391,13 @@ fn network_game_ui(ui: &mut ui::Ui, _state: &mut NetworkUiState) -> Option<MainM
                     index: 0,
                     controller: PlayerControllerKind::Network(1),
                     character: resources.player_characters[0].clone(),
+                    ai: false,
                 },
                 PlayerParams {
                     index: 1,
                     controller: PlayerControllerKind::LocalInput(GameInputScheme::KeyboardLeft),
                     character: resources.player_characters[1].clone(),
+                    ai: false,
                 },
             ],
         });

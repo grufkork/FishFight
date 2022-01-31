@@ -85,10 +85,11 @@ impl Game {
             index,
             controller,
             character,
+            ai: is_ai,
         } in player_params.iter().cloned()
         {
             let position = map.get_random_spawn_point();
-            let player = spawn_player(&mut world, index, position, controller, character);
+            let player = spawn_player(&mut world, index, position, controller, character, is_ai);
 
             players.push(player);
         }

@@ -1,5 +1,6 @@
-use crate::player::GameInput;
+use crate::GameInput;
 
+#[derive(Debug, Copy, Clone)]
 pub struct Ai {
     jump_cooldown: f32,
     throw_cooldown: f32,
@@ -19,7 +20,7 @@ impl Ai {
         }
     }
 
-    pub fn update(&mut self, _player: &mut OldPlayer) -> GameInput {
+    pub fn update(&mut self) -> GameInput {
         let input = GameInput {
             right: self.fix_direction == 1,
             left: self.fix_direction == -1,
