@@ -1,12 +1,96 @@
+use hecs::World;
+
 use crate::GameInput;
 
-#[derive(Debug, Copy, Clone)]
+enum goal{
+    GetWeapon,
+
+}
+
+trait BehaviourTreeNode{
+    fn evaluate(&mut self) -> Option<bool>;
+    fn start(&mut self) {}
+}
+
+struct Sequence{
+    children: Vec<Box<dyn BehaviourTreeNode>>,
+    index: Option<usize>,
+    return_on_fail: bool
+}
+
+impl Sequence{
+    fn new(children: Vec<Box<dyn BehaviourTreeNode>>, return_on_fail: bool) -> Box<dyn BehaviourTreeNode>{
+        Box::new(Sequence{
+            children,
+            index: None,
+            return_on_fail,
+        })
+    }
+}
+
+impl BehaviourTreeNode for Sequence{
+    fn evaluate(&mut self) -> Option<bool> {
+        if self.index.is_none(){
+            self.index = Some(0);
+        }
+        match self.children[self.index.unwrap()].evaluate(){
+            Some(success) => {
+                self.index = Some(self.index.unwrap() + 1);
+                if success{
+                    if self.index.unwrap() == self.children.len() {
+                        self.index = None;
+                        Some(true)
+                    }else{
+                        self.children[self.index.unwrap()].start();
+                        None
+                    }
+                }else if self.return_on_fail{
+                    self.index = None;
+                    Some(false)
+                }else{
+                    self.children[self.index.unwrap()].start();
+                    None
+                }
+            },
+            None => None,
+        }
+    }
+}
+
+struct ConditionNode{
+    condition: Box<dyn Fn(i32) -> bool>,
+    child: Box<dyn BehaviourTreeNode>,
+    running: bool
+}
+
+impl BehaviourTreeNode for ConditionNode{
+    fn evaluate(&mut self) -> Option<bool> {
+        if !self.running{
+            if (self.condition)(1337){
+                self.running = true;
+                self.child.start();
+            }else{
+                return Some(false)
+            }
+        }
+        match self.child.evaluate(){
+            Some(success) => {
+                self.running = false;
+                Some(success)
+            },
+            None => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Ai {
     jump_cooldown: f32,
     throw_cooldown: f32,
     keep_direction_until_event: bool,
     keep_direction_timeout: f32,
     fix_direction: i32,
+    tree: Box<dyn BehaviourTreeNode>
 }
 
 impl Ai {
@@ -17,14 +101,22 @@ impl Ai {
             keep_direction_timeout: 0.,
             fix_direction: 0,
             throw_cooldown: 0.,
+            tree: Sequence::new(vec![
+
+            ], true)
         }
     }
 
-    pub fn update(&mut self) -> GameInput {
+    pub fn update(&mut self, world: &mut World) -> GameInput {
         let input = GameInput {
-            right: self.fix_direction == 1,
-            left: self.fix_direction == -1,
-            ..Default::default()
+            right: false,
+            left: true,
+            down: false,
+            jump: true,
+            float: false,
+            pickup: false,
+            fire: false,
+            slide: false,
         };
 
         /*
@@ -130,5 +222,11 @@ impl Ai {
          */
 
         input
+    }
+}
+
+impl Default for Ai {
+    fn default() -> Self {
+        Self::new()
     }
 }

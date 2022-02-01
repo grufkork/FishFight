@@ -5,7 +5,7 @@ use macroquad::prelude::*;
 use crate::network::AccountId;
 use crate::{collect_local_input, GameInput, GameInputScheme};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum PlayerControllerKind {
     LocalInput(GameInputScheme),
     Network(AccountId),
@@ -93,7 +93,7 @@ pub fn update_player_controllers(world: &mut World) {
                 // TODO: Network input
             }
             PlayerControllerKind::Ai(mut ai) => {
-                controller.apply_input(ai.update());
+                controller.apply_input(ai.update(&mut world));
             },
         }
     }

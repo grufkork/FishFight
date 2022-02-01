@@ -203,12 +203,12 @@ pub async fn show_select_characters_menu(
                         }
 
                         {
-                            let btn_position =
-                                vec2(btn_section.x + (SECTION_MARGIN / 2.0), btn_section.y);
+                            let pos =
+                                vec2(btn_section.x + (SECTION_MARGIN / 2.0), btn_section.y - 10.0);
 
                             should_navigate_right = widgets::Button::new(">")
                                 .size(btn_size)
-                                .position(btn_position)
+                                .position(pos)
                                 .ui(ui)
                                 || should_navigate_right;
                         }
