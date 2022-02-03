@@ -2,16 +2,39 @@ use hecs::World;
 
 use crate::GameInput;
 
-enum goal{
-    GetWeapon,
-
+struct Condition{
+    function: Box<dyn Fn(i32) -> bool + Send + Sync>
 }
 
-trait BehaviourTreeNode{
+impl std::fmt::Debug for Condition{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Ok(())
+    }
+}
+
+trait BehaviourTreeNode: Send + Sync + std::fmt::Debug{
     fn evaluate(&mut self) -> Option<bool>;
     fn start(&mut self) {}
+    fn safe_clone(&self) -> Box<dyn BehaviourTreeNode>;
 }
 
+/*impl Clone for Box<dyn BehaviourTreeNode>{
+    fn clone(&self) -> Box<dyn BehaviourTreeNode> {
+        self.safe_clone()
+    }
+}*/
+
+impl Clone for Box<dyn BehaviourTreeNode>{
+    fn clone(&self) -> Self{
+        self.safe_clone()
+    }
+}
+
+trait CloneWrap: Clone{
+
+}
+
+#[derive(Debug, Clone)]
 struct Sequence{
     children: Vec<Box<dyn BehaviourTreeNode>>,
     index: Option<usize>,
@@ -55,10 +78,15 @@ impl BehaviourTreeNode for Sequence{
             None => None,
         }
     }
+
+    fn safe_clone(&self) -> std::boxed::Box<(dyn BehaviourTreeNode + 'static)>{
+        Box::new(self.clone())
+    }
 }
 
+#[derive(Debug, Clone)]
 struct ConditionNode{
-    condition: Box<dyn Fn(i32) -> bool>,
+    //condition: Condition,
     child: Box<dyn BehaviourTreeNode>,
     running: bool
 }
@@ -66,7 +94,9 @@ struct ConditionNode{
 impl BehaviourTreeNode for ConditionNode{
     fn evaluate(&mut self) -> Option<bool> {
         if !self.running{
-            if (self.condition)(1337){
+            if(true){
+            //if (self.condition.function)(1337){
+            
                 self.running = true;
                 self.child.start();
             }else{
@@ -81,6 +111,10 @@ impl BehaviourTreeNode for ConditionNode{
             None => None,
         }
     }
+
+    fn safe_clone(&self) -> std::boxed::Box<(dyn BehaviourTreeNode + 'static)>{
+        Box::new(self.clone())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -92,6 +126,14 @@ pub struct Ai {
     fix_direction: i32,
     tree: Box<dyn BehaviourTreeNode>
 }
+
+/*impl<T: BehaviourTreeNode> std::fmt::Debug for T{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        &self.
+    }
+}*/
+
+ 
 
 impl Ai {
     pub fn new() -> Ai {
@@ -107,7 +149,7 @@ impl Ai {
         }
     }
 
-    pub fn update(&mut self, world: &mut World) -> GameInput {
+    pub fn update(&self) -> GameInput {
         let input = GameInput {
             right: false,
             left: true,

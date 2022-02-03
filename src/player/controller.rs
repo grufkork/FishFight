@@ -84,7 +84,7 @@ impl PlayerController {
 
 pub fn update_player_controllers(world: &mut World) {
     for (_, controller) in world.query_mut::<&mut PlayerController>() {
-        match controller.kind {
+        match controller.kind.clone() {
             PlayerControllerKind::LocalInput(input_scheme) => {
                 let input = collect_local_input(input_scheme);
                 controller.apply_input(input);
@@ -92,8 +92,8 @@ pub fn update_player_controllers(world: &mut World) {
             PlayerControllerKind::Network(_account_id) => {
                 // TODO: Network input
             }
-            PlayerControllerKind::Ai(mut ai) => {
-                controller.apply_input(ai.update(&mut world));
+            PlayerControllerKind::Ai(ai) => {
+                controller.apply_input(ai.update());
             },
         }
     }

@@ -137,6 +137,11 @@ async fn main() -> Result<()> {
         storage::store(particles);
     }
 
+    {
+        let ais: Vec<player::Ai> = Vec::new();
+        storage::store(ais);
+    }
+
     init_passive_effects();
 
     'outer: loop {
