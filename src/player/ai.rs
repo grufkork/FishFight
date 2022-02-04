@@ -1,4 +1,5 @@
 use hecs::World;
+use macroquad::prelude::collections::storage;
 
 use crate::GameInput;
 
@@ -12,10 +13,10 @@ impl std::fmt::Debug for Condition{
     }
 }
 
-trait BehaviourTreeNode: Send + Sync + std::fmt::Debug{
-    fn evaluate(&mut self) -> Option<bool>;
+trait BehaviourTreeNode/* : Send + Sync + std::fmt::Debug*/{
+    fn evaluate(&mut self, world: &World, input: &mut GameInput) -> Option<bool>;
     fn start(&mut self) {}
-    fn safe_clone(&self) -> Box<dyn BehaviourTreeNode>;
+    // fn safe_clone(&self) -> Box<dyn BehaviourTreeNode>;
 }
 
 /*impl Clone for Box<dyn BehaviourTreeNode>{
@@ -24,17 +25,17 @@ trait BehaviourTreeNode: Send + Sync + std::fmt::Debug{
     }
 }*/
 
-impl Clone for Box<dyn BehaviourTreeNode>{
-    fn clone(&self) -> Self{
-        self.safe_clone()
-    }
-}
+// impl Clone for Box<dyn BehaviourTreeNode>{
+//     fn clone(&self) -> Self{
+//         self.safe_clone()
+//     }
+// }
 
 trait CloneWrap: Clone{
 
 }
 
-#[derive(Debug, Clone)]
+// #[derive(Debug, Clone)]
 struct Sequence{
     children: Vec<Box<dyn BehaviourTreeNode>>,
     index: Option<usize>,
@@ -52,50 +53,59 @@ impl Sequence{
 }
 
 impl BehaviourTreeNode for Sequence{
-    fn evaluate(&mut self) -> Option<bool> {
-        if self.index.is_none(){
+    fn evaluate(&mut self, world: &World, input: &mut GameInput) -> Option<bool> {
+        if self.index.is_none(){ //If not running, start from beginning
             self.index = Some(0);
         }
-        match self.children[self.index.unwrap()].evaluate(){
-            Some(success) => {
-                self.index = Some(self.index.unwrap() + 1);
-                if success{
-                    if self.index.unwrap() == self.children.len() {
-                        self.index = None;
-                        Some(true)
-                    }else{
-                        self.children[self.index.unwrap()].start();
-                        None
-                    }
-                }else if self.return_on_fail{
+        match self.children[self.index.unwrap()].evaluate(world, input){ //Eval next node in line
+            Some(successful) => { // When a child finishes running...
+                self.index = Some(self.index.unwrap() + 1); // ...go to next
+
+                if !successful && self.return_on_fail{
                     self.index = None;
-                    Some(false)
+                    Some(false) // Not all have run, return failure
+                }else if self.index.unwrap() == self.children.len(){
+                    self.index = None;
+                    Some(true)  // All children have at least tried to run
                 }else{
-                    self.children[self.index.unwrap()].start();
-                    None
+                    None // Run next node
                 }
             },
-            None => None,
+            None => None, //If child is still running, this one is running too
         }
     }
 
-    fn safe_clone(&self) -> std::boxed::Box<(dyn BehaviourTreeNode + 'static)>{
-        Box::new(self.clone())
-    }
+    // fn safe_clone(&self) -> std::boxed::Box<(dyn BehaviourTreeNode + 'static)>{
+    //     Box::new(self.clone())
+    // }
 }
 
-#[derive(Debug, Clone)]
+// #[derive(Debug, Clone)]
 struct ConditionNode{
     //condition: Condition,
+    
+    condition: Box<dyn Fn(&World) -> bool>,
     child: Box<dyn BehaviourTreeNode>,
-    running: bool
+    running: bool,
+    reevaluate: bool
+}
+
+impl ConditionNode{
+    fn create(condition: Box<dyn Fn(&World) -> bool>, child: Box<dyn BehaviourTreeNode>, reevaluate: bool) -> Box<ConditionNode>{
+        Box::new(ConditionNode{
+            condition,
+            child,
+            running: false,
+            reevaluate,
+        })
+    }
 }
 
 impl BehaviourTreeNode for ConditionNode{
-    fn evaluate(&mut self) -> Option<bool> {
-        if !self.running{
-            if(true){
-            //if (self.condition.function)(1337){
+    fn evaluate(&mut self, world: &World, input: &mut GameInput) -> Option<bool> {
+        if self.reevaluate || !self.running{
+            //if(true){
+            if (self.condition)(world){
             
                 self.running = true;
                 self.child.start();
@@ -103,7 +113,7 @@ impl BehaviourTreeNode for ConditionNode{
                 return Some(false)
             }
         }
-        match self.child.evaluate(){
+        match self.child.evaluate(world, input){
             Some(success) => {
                 self.running = false;
                 Some(success)
@@ -112,12 +122,12 @@ impl BehaviourTreeNode for ConditionNode{
         }
     }
 
-    fn safe_clone(&self) -> std::boxed::Box<(dyn BehaviourTreeNode + 'static)>{
-        Box::new(self.clone())
-    }
+    // fn safe_clone(&self) -> std::boxed::Box<(dyn BehaviourTreeNode + 'static)>{
+    //     Box::new(self.clone())
+    // }
 }
 
-#[derive(Debug, Clone)]
+// #[derive(Debug, Clone)]
 pub struct Ai {
     jump_cooldown: f32,
     throw_cooldown: f32,
@@ -136,20 +146,28 @@ pub struct Ai {
  
 
 impl Ai {
-    pub fn new() -> Ai {
-        Ai {
-            jump_cooldown: 0.,
-            keep_direction_until_event: false,
-            keep_direction_timeout: 0.,
-            fix_direction: 0,
-            throw_cooldown: 0.,
-            tree: Sequence::new(vec![
-
-            ], true)
-        }
+    pub fn create() -> usize {
+        let mut ais = storage::get_mut::<Vec<Ai>>();
+        ais.push(
+            Ai {
+                jump_cooldown: 0.,
+                throw_cooldown: 0.,
+                keep_direction_until_event: false,
+                keep_direction_timeout: 0.,
+                fix_direction: 0,
+                tree: Sequence::new(vec![
+                    Box::new(ConditionNode{ 
+                        condition: todo!(), 
+                        child: todo!(), 
+                        running: todo!(), 
+                        reevaluate: todo!() })
+                ], true)
+            }
+        );
+        ais.len() - 1
     }
 
-    pub fn update(&self) -> GameInput {
+    pub fn update(&mut self, world: &World) -> GameInput {
         let input = GameInput {
             right: false,
             left: true,
@@ -160,6 +178,18 @@ impl Ai {
             fire: false,
             slide: false,
         };
+
+        let mut i = GameInput{
+            left: false,
+            right: false,
+            down: false,
+            jump: false,
+            float: false,
+            pickup: false,
+            fire: false,
+            slide: false,
+        };
+        self.tree.evaluate(&world, &mut i);
 
         /*
         let foe = scene::find_nodes_by_type::<OldPlayer>().next().unwrap();
@@ -267,8 +297,8 @@ impl Ai {
     }
 }
 
-impl Default for Ai {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// impl Default for Ai {
+//     fn default() -> Self {
+//         Self::new()
+//     }
+// }

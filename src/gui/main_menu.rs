@@ -203,7 +203,7 @@ pub async fn show_main_menu() -> MainMenuResult {
                                 let character = player_characters.get(i).unwrap().character_metadata.clone();
 
                                 let controller = if player_characters.get(i).unwrap().is_ai{
-                                    PlayerControllerKind::Ai(Ai::new())
+                                    PlayerControllerKind::Ai(Ai::create())
                                 }else{   
                                     PlayerControllerKind::LocalInput(input_scheme)
                                 };
