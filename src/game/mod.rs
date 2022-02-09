@@ -13,6 +13,8 @@ use macroquad::ui::root_ui;
 
 use hecs::{Entity, World};
 
+use core::Result;
+
 use crate::debug;
 use crate::ecs::Scheduler;
 use crate::gui::{self, GAME_MENU_RESULT_MAIN_MENU, GAME_MENU_RESULT_QUIT};
@@ -22,7 +24,6 @@ use crate::player::{
     update_player_controllers, update_player_events, update_player_inventory,
     update_player_passive_effects, update_player_states, PlayerParams,
 };
-use crate::Result;
 use crate::{
     create_collision_world, debug_draw_drawables, debug_draw_rigid_bodies, draw_drawables,
     exit_to_main_menu, fixed_update_rigid_bodies, is_gamepad_btn_pressed, quit_to_desktop,
@@ -38,21 +39,16 @@ use crate::items::spawn_item;
 use crate::map::{fixed_update_sproingers, spawn_decoration, spawn_sproinger};
 use crate::network::{
     fixed_update_network_client, fixed_update_network_host, update_network_client,
-    update_network_host, AccountId, NetworkClient, NetworkHost,
+    update_network_host, NetworkClient, NetworkHost,
 };
 use crate::particles::{draw_particles, update_particle_emitters};
 pub use music::{start_music, stop_music};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum GameMode {
     Local,
-    NetworkHost {
-        port: Option<u16>,
-    },
-    NetworkClient {
-        port: Option<u16>,
-        host_id: AccountId,
-    },
+    NetworkHost,
+    NetworkClient,
 }
 
 pub struct Game {
@@ -101,17 +97,17 @@ impl Game {
         let mut fixed_updates_builder = Scheduler::builder();
 
         match mode {
-            GameMode::NetworkClient { port, host_id } => {
+            GameMode::NetworkClient { .. } => {
                 let e = world.spawn(());
-                world.insert_one(e, NetworkClient::new(port, host_id))?;
+                world.insert_one(e, NetworkClient::new())?;
 
                 updates_builder.add_system(update_network_client);
 
                 fixed_updates_builder.add_system(fixed_update_network_client);
             }
-            GameMode::NetworkHost { port } => {
+            GameMode::NetworkHost { .. } => {
                 let e = world.spawn(());
-                world.insert_one(e, NetworkHost::new(port))?;
+                world.insert_one(e, NetworkHost::new())?;
 
                 updates_builder.add_system(update_network_host);
 

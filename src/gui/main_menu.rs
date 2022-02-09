@@ -8,12 +8,12 @@ use macroquad::{
 
 use fishsticks::{Button, GamepadContext};
 
-use network_core::Backend;
+use core::Id;
 
 use super::{draw_main_menu_background, GuiResources, Menu, MenuEntry, MenuResult, Panel};
 
 use crate::input::update_gamepad_context;
-use crate::network::{AccountId, Api};
+use crate::network::Api;
 use crate::player::{PlayerControllerKind, PlayerParams, Ai};
 use crate::{gui, is_gamepad_btn_pressed, EditorInputScheme, GameInputScheme, Map, Resources};
 
@@ -30,7 +30,7 @@ pub enum MainMenuResult {
         players: Vec<PlayerParams>,
     },
     NetworkGame {
-        host_id: AccountId,
+        is_host: bool,
         map: Map,
         players: Vec<PlayerParams>,
     },
@@ -75,9 +75,17 @@ fn build_main_menu() -> Menu {
                 title: "Local Game".to_string(),
                 ..Default::default()
             },
+            #[cfg(debug_assertions)]
             MenuEntry {
                 index: ROOT_OPTION_NETWORK_GAME,
                 title: "Network Game".to_string(),
+                ..Default::default()
+            },
+            #[cfg(not(debug_assertions))]
+            MenuEntry {
+                index: ROOT_OPTION_NETWORK_GAME,
+                title: "Network Game".to_string(),
+                is_disabled: true,
                 ..Default::default()
             },
             MenuEntry {
@@ -356,25 +364,23 @@ fn network_game_ui(ui: &mut ui::Ui, _state: &mut NetworkUiState) -> Option<MainM
     let mut res = None;
 
     if ui.button(None, "Host") {
-        let account = Api::get_own_account().unwrap();
-
         let resources = storage::get::<Resources>();
         let map_resource = resources.maps.first().cloned().unwrap();
         res = Some(MainMenuResult::NetworkGame {
-            host_id: account.id,
+            is_host: true,
             map: map_resource.map,
             players: vec![
                 PlayerParams {
                     index: 0,
                     controller: PlayerControllerKind::LocalInput(GameInputScheme::KeyboardLeft),
-                    character: resources.player_characters[0].clone(),
-                    ai: false,
+                    character: resources.player_characters.get("pescy").cloned().unwrap(),
+                    ai: false
                 },
                 PlayerParams {
                     index: 1,
-                    controller: PlayerControllerKind::Network(2),
-                    character: resources.player_characters[1].clone(),
-                    ai: false,
+                    controller: PlayerControllerKind::Network(Id::from("2")),
+                    character: resources.player_characters.get("sharky").cloned().unwrap(),
+                    ai: false
                 },
             ],
         });
@@ -384,20 +390,20 @@ fn network_game_ui(ui: &mut ui::Ui, _state: &mut NetworkUiState) -> Option<MainM
         let resources = storage::get::<Resources>();
         let map_resource = resources.maps.first().cloned().unwrap();
         res = Some(MainMenuResult::NetworkGame {
-            host_id: 1,
+            is_host: false,
             map: map_resource.map,
             players: vec![
                 PlayerParams {
                     index: 0,
-                    controller: PlayerControllerKind::Network(1),
-                    character: resources.player_characters[0].clone(),
-                    ai: false,
+                    controller: PlayerControllerKind::Network(Id::from("1")),
+                    character: resources.player_characters.get("pescy").cloned().unwrap(),
+                    ai: false
                 },
                 PlayerParams {
                     index: 1,
                     controller: PlayerControllerKind::LocalInput(GameInputScheme::KeyboardLeft),
-                    character: resources.player_characters[1].clone(),
-                    ai: false,
+                    character: resources.player_characters.get("sharky").cloned().unwrap(),
+                    ai: false
                 },
             ],
         });

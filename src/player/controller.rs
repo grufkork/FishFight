@@ -3,14 +3,15 @@ use macroquad::prelude::*;
 use macroquad::prelude::collections::storage;
 //use ai::Ai;
 
-use crate::network::AccountId;
+use core::Id;
+
 use crate::{collect_local_input, GameInput, GameInputScheme};
 
 #[derive(Debug, Clone)]
 pub enum PlayerControllerKind {
     LocalInput(GameInputScheme),
-    Network(AccountId),
     Ai(usize),
+    Network(Id),
 }
 
 impl PlayerControllerKind {
@@ -88,9 +89,9 @@ pub fn update_player_controllers(world: &mut World) {
     let gameinputs = ais.iter_mut().map(|ai| ai.update(&world)).collect::<Vec<GameInput>>();
     
     for (_, controller) in world.query_mut::<&mut PlayerController>() {
-        match controller.kind.clone() {
+        match &controller.kind {
             PlayerControllerKind::LocalInput(input_scheme) => {
-                let input = collect_local_input(input_scheme);
+                let input = collect_local_input(*input_scheme);
                 controller.apply_input(input);
             }
             PlayerControllerKind::Network(_account_id) => {

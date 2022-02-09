@@ -7,28 +7,23 @@ use macroquad::experimental::collections::storage;
 use macroquad::prelude::*;
 
 pub mod config;
-pub mod editor;
-mod gui;
-mod items;
-pub mod json;
-pub mod map;
-pub mod math;
-mod noise;
-pub mod resources;
-pub mod text;
-#[macro_use]
-pub mod error;
-pub mod data;
 pub mod debug;
 pub mod ecs;
+pub mod editor;
 pub mod effects;
 pub mod events;
 pub mod game;
+mod gui;
 pub mod input;
+mod items;
+pub mod json;
+pub mod map;
 pub mod network;
+mod noise;
 pub mod particles;
 pub mod physics;
 pub mod player;
+pub mod resources;
 
 mod channel;
 mod drawables;
@@ -39,15 +34,9 @@ pub use input::*;
 pub use physics::*;
 pub use transform::*;
 
-use network_core::Backend;
-
 use editor::{Editor, EditorCamera, EditorInputScheme};
 
-pub use error::{Error, ErrorKind, Result};
-
 use map::{Map, MapLayerKind, MapObjectKind};
-
-use network::Api;
 
 pub use channel::Channel;
 
@@ -76,10 +65,11 @@ pub use effects::{
 
 pub type CollisionWorld = macroquad_platformer::World;
 
-const ASSETS_DIR_ENV_VAR: &str = "FISHFIGHT_ASSETS";
 const CONFIG_FILE_ENV_VAR: &str = "FISHFIGHT_CONFIG";
+const ASSETS_DIR_ENV_VAR: &str = "FISHFIGHT_ASSETS";
+const MODS_DIR_ENV_VAR: &str = "FISHFIGHT_MODS";
 
-const WINDOW_TITLE: &str = "FishFight";
+const WINDOW_TITLE: &str = "Fish Fight";
 
 /// Exit to main menu
 pub fn exit_to_main_menu() {
@@ -89,6 +79,11 @@ pub fn exit_to_main_menu() {
 /// Quit to desktop
 pub fn quit_to_desktop() {
     ApplicationEvent::Quit.dispatch()
+}
+
+/// Reload resources
+pub fn reload_resources() {
+    ApplicationEvent::ReloadResources.dispatch()
 }
 
 fn window_conf() -> Conf {
@@ -117,15 +112,16 @@ fn window_conf() -> Conf {
 }
 
 #[macroquad::main(window_conf)]
-async fn main() -> Result<()> {
+async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     use events::iter_events;
     use gui::MainMenuResult;
 
     let assets_dir = env::var(ASSETS_DIR_ENV_VAR).unwrap_or_else(|_| "./assets".to_string());
+    let mods_dir = env::var(MODS_DIR_ENV_VAR).unwrap_or_else(|_| "./mods".to_string());
 
     rand::srand(0);
 
-    load_resources(&assets_dir).await;
+    load_resources(&assets_dir, &mods_dir).await?;
 
     {
         let gamepad_system = fishsticks::GamepadContext::init().unwrap();
@@ -144,6 +140,8 @@ async fn main() -> Result<()> {
 
     init_passive_effects();
 
+    // init_api("player_one_token").await?;
+
     'outer: loop {
         match gui::show_main_menu().await {
             MainMenuResult::LocalGame { map, players } => {
@@ -153,19 +151,14 @@ async fn main() -> Result<()> {
                 start_music("fish_tide");
             }
             MainMenuResult::NetworkGame {
-                host_id,
+                is_host,
                 map,
                 players,
             } => {
-                let is_host = Api::is_own_id(host_id)?;
-
                 let mode = if is_host {
-                    GameMode::NetworkHost { port: None }
+                    GameMode::NetworkHost
                 } else {
-                    GameMode::NetworkClient {
-                        port: None,
-                        host_id,
-                    }
+                    GameMode::NetworkClient
                 };
 
                 let game = Game::new(mode, map, &players)?;
@@ -194,8 +187,7 @@ async fn main() -> Result<()> {
                 scene::add_node(Editor::new(input_scheme, map_resource));
             }
             MainMenuResult::ReloadResources => {
-                let resources = storage::get::<Resources>();
-                load_resources(&resources.assets_dir).await;
+                reload_resources();
                 continue 'outer;
             }
             MainMenuResult::Credits => {
@@ -216,7 +208,7 @@ async fn main() -> Result<()> {
                 match event {
                     ApplicationEvent::ReloadResources => {
                         let resources = storage::get::<Resources>();
-                        load_resources(&resources.assets_dir).await;
+                        load_resources(&resources.assets_dir, &resources.mods_dir).await?;
                     }
                     ApplicationEvent::MainMenu => break 'inner,
                     ApplicationEvent::Quit => break 'outer,
@@ -235,6 +227,8 @@ async fn main() -> Result<()> {
 
         stop_music();
     }
+
+    // Api::close().await?;
 
     Ok(())
 }

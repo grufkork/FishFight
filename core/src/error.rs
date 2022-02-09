@@ -6,22 +6,12 @@
 
 use std::{error, fmt, io, result, string::FromUtf8Error};
 
-use macroquad::prelude::{FileError, FontError};
+use macroquad::file::FileError;
+use macroquad::text::FontError;
+
+use crate::network::RequestStatus;
 
 pub type Result<T> = result::Result<T, Error>;
-
-enum Repr {
-    Simple(ErrorKind),
-    Message(ErrorKind, String),
-    SimpleMessage(ErrorKind, &'static &'static str),
-    Custom(Box<Custom>),
-}
-
-#[derive(Debug)]
-struct Custom {
-    kind: ErrorKind,
-    error: Box<dyn std::error::Error + Send + Sync>,
-}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ErrorKind {
@@ -30,6 +20,7 @@ pub enum ErrorKind {
     File,
     Parsing,
     Input,
+    Api,
     Network,
     EditorAction,
 }
@@ -42,10 +33,33 @@ impl ErrorKind {
             ErrorKind::File => "File error",
             ErrorKind::Parsing => "Parsing error",
             ErrorKind::Input => "Input error",
+            ErrorKind::Api => "Api error",
             ErrorKind::Network => "Network error",
             ErrorKind::EditorAction => "Editor action error",
         }
     }
+}
+
+impl From<RequestStatus> for Error {
+    fn from(status: RequestStatus) -> Self {
+        Error::new_message(
+            ErrorKind::Api,
+            &format!("[{}]: {}", status.as_code(), status.as_str()),
+        )
+    }
+}
+
+enum Repr {
+    Simple(ErrorKind),
+    Message(ErrorKind, String),
+    SimpleMessage(ErrorKind, &'static &'static str),
+    Custom(Box<Custom>),
+}
+
+#[derive(Debug)]
+struct Custom {
+    kind: ErrorKind,
+    error: Box<dyn error::Error + Send + Sync>,
 }
 
 pub struct Error {
@@ -61,7 +75,7 @@ impl fmt::Debug for Error {
 impl Error {
     pub fn new<E>(kind: ErrorKind, error: E) -> Error
     where
-        E: Into<Box<dyn std::error::Error + Send + Sync>>,
+        E: Into<Box<dyn error::Error + Send + Sync>>,
     {
         Error {
             repr: Repr::Custom(Box::new(Custom {
@@ -140,31 +154,11 @@ impl error::Error for Error {
             Repr::Custom(ref c) => c.error.source(),
         }
     }
-
-    #[allow(deprecated, deprecated_in_future)]
-    fn description(&self) -> &str {
-        match &self.repr {
-            Repr::Simple(kind) => kind.as_str(),
-            Repr::Message(_, msg) => msg,
-            Repr::SimpleMessage(_, &msg) => msg,
-            Repr::Custom(ref c) => c.error.description(),
-        }
-    }
-
-    #[allow(deprecated)]
-    fn cause(&self) -> Option<&dyn error::Error> {
-        match self.repr {
-            Repr::Simple(..) => None,
-            Repr::Message(..) => None,
-            Repr::SimpleMessage(..) => None,
-            Repr::Custom(ref c) => c.error.cause(),
-        }
-    }
 }
 
-impl From<network_core::Error> for Error {
-    fn from(err: network_core::Error) -> Self {
-        Error::new_message(ErrorKind::Network, err)
+impl From<crate::data::Error> for Error {
+    fn from(err: crate::data::Error) -> Self {
+        Error::new(ErrorKind::Parsing, err)
     }
 }
 
@@ -198,18 +192,6 @@ impl From<FontError> for Error {
     }
 }
 
-impl From<serde_json::Error> for Error {
-    fn from(err: serde_json::Error) -> Self {
-        Error::new(ErrorKind::Parsing, err)
-    }
-}
-
-impl From<crate::data::Error> for Error {
-    fn from(err: crate::data::Error) -> Self {
-        Error::new(ErrorKind::Parsing, err)
-    }
-}
-
 impl From<hecs::ComponentError> for Error {
     fn from(err: hecs::ComponentError) -> Self {
         Error::new(ErrorKind::Ecs, err)
@@ -225,6 +207,13 @@ impl From<hecs::NoSuchEntity> for Error {
 impl From<hecs::QueryOneError> for Error {
     fn from(err: hecs::QueryOneError) -> Self {
         Error::new(ErrorKind::Ecs, err)
+    }
+}
+
+#[cfg(feature = "serde_json")]
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Self {
+        Error::new(ErrorKind::Parsing, err)
     }
 }
 

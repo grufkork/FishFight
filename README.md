@@ -2,7 +2,7 @@
 
 [![Build Status](https://img.shields.io/github/workflow/status/fishfight/FishFight/Compilation%20check?logo=github&labelColor=1e1c24&color=8bcfcf)](https://github.com/fishfight/FishFight/actions) [![Documentation](https://img.shields.io/badge/documentation-fishfight.github.io-green.svg?labelColor=1e1c24&color=f3ee7a)](https://fishfight.github.io/FishFight/) [![License](https://img.shields.io/badge/License-MIT%20or%20Apache%202-green.svg?label=license&labelColor=1e1c24&color=34925e)](./LICENSE) [![Discord](https://img.shields.io/badge/chat-on%20discord-green.svg?logo=discord&logoColor=fff&labelColor=1e1c24&color=8d5b3f)](https://discord.gg/4smxjcheE5)
 
-![Fish Fight Preview](./assets/preview.gif)
+![Fish Fight Preview](https://user-images.githubusercontent.com/24392180/151969075-399e9fea-e2de-4340-96a4-0a0e5b79c281.gif)
 
 ## Introduction
 
@@ -37,7 +37,8 @@ Before committing and opening a PR, please run the following commands and follow
 ### Learning Materials
 - https://fishfight.github.io/FishFight/
 - https://macroquad.rs/tutorials/fish-tutorial/ (outdated)
-- https://not-fl3.github.io/platformer-book/intro.html
+- https://not-fl3.github.io/platformer-book/intro.html (wip)
+- https://cleancut.github.io/rusty_engine/
 - https://sokoban.iolivia.me/
 - https://pragprog.com/titles/hwrust/hands-on-rust/
 
@@ -45,6 +46,10 @@ Before committing and opening a PR, please run the following commands and follow
 
 1. Download the latest version from the [releases](https://github.com/fishfight/FishFight/releases) page.
 2. Extract the archive and run the executable. (e.g. `./fishfight` or `fishfight.exe`)
+
+### Launcher
+
+[A cross-platform launcher](https://github.com/fishfight/Launcher) is also available for downloading and launching the game easily.
 
 ### Distro Packages
 
