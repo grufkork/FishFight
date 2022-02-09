@@ -64,5 +64,12 @@
     "name": "zyrafa06",
     "path": "maps/zyrafa06.json",
     "preview_path": "maps/zyrafa06.png"
+  },
+  {
+    "name": "campaign",
+    "description": "info?",
+    "path": "maps\\campaign.json",
+    "preview_path": "maps/no_preview.png",
+    "is_user_map": true
   }
 ]
