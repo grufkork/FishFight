@@ -85,7 +85,7 @@ impl Game {
         } in player_params.iter().cloned()
         {
             let position = map.get_random_spawn_point();
-            let player = spawn_player(&mut world, index, position, controller, character, is_ai);
+            let player = spawn_player(&mut world, index, position, controller, character);
 
             players.push(player);
         }
@@ -272,7 +272,7 @@ pub fn spawn_map_objects(world: &mut World, map: &Map) -> Result<Vec<Entity>> {
                                 objects.push(sproinger);
                             },
                             "mook" => {
-
+                                objects.push(crate::player::Enemies::mook(world, map_object.position));
                             },
                             _ => {
                                 #[cfg(debug_assertions)]

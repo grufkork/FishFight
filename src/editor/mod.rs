@@ -1436,34 +1436,35 @@ impl Node for Editor {
                                     }
                                 }
                                 MapObjectKind::Environment => {
-                                    if &object.id == "sproinger" {
-                                        let texture_res =
-                                            resources.textures.get("sproinger").unwrap();
+                                    match object.id.as_str(){
+                                        "sproinger" => {
+                                            let texture_res =
+                                                resources.textures.get("sproinger").unwrap();
 
-                                        let frame_size =
-                                            texture_res.meta.frame_size.unwrap_or_else(|| {
-                                                vec2(
-                                                    texture_res.texture.width(),
-                                                    texture_res.texture.height(),
-                                                )
-                                            });
+                                            let frame_size =
+                                                texture_res.meta.frame_size.unwrap_or_else(|| {
+                                                    vec2(
+                                                        texture_res.texture.width(),
+                                                        texture_res.texture.height(),
+                                                    )
+                                                });
 
-                                        let source_rect =
-                                            Rect::new(0.0, 0.0, frame_size.x, frame_size.y);
+                                            let source_rect =
+                                                Rect::new(0.0, 0.0, frame_size.x, frame_size.y);
 
-                                        draw_texture_ex(
-                                            texture_res.texture,
-                                            object_position.x,
-                                            object_position.y,
-                                            color::WHITE,
-                                            DrawTextureParams {
-                                                dest_size: Some(frame_size),
-                                                source: Some(source_rect),
-                                                ..Default::default()
-                                            },
-                                        );
-                                    } else {
-                                        label = Some("INVALID OBJECT ID".to_string());
+                                            draw_texture_ex(
+                                                texture_res.texture,
+                                                object_position.x,
+                                                object_position.y,
+                                                color::WHITE,
+                                                DrawTextureParams {
+                                                    dest_size: Some(frame_size),
+                                                    source: Some(source_rect),
+                                                    ..Default::default()
+                                                },
+                                            )
+                                        },
+                                        name => {label = Some(format!("INVALID OBJECT ID: {}", name));}
                                     }
                                 }
                             }

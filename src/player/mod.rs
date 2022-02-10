@@ -157,7 +157,6 @@ pub fn spawn_player(
     position: Vec2,
     controller: PlayerControllerKind,
     character: PlayerCharacterMetadata,
-    ai_enabled: bool,
 ) -> Entity {
     let weapon_mount = character.weapon_mount;
 

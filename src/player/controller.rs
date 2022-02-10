@@ -91,7 +91,7 @@ pub fn update_player_controllers(world: &mut World) {
     let gameinputs = ais.iter_mut().map(|ai| ai.update(&world)).collect::<Vec<GameInput>>();
     
     for (_, controller) in world.query_mut::<&mut PlayerController>() {
-        match &controller.kind {
+        match &controller.kind.clone() {
             PlayerControllerKind::LocalInput(input_scheme) => {
                 let input = collect_local_input(*input_scheme);
                 controller.apply_input(input);

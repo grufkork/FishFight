@@ -1,7 +1,10 @@
-use hecs::World;
+use hecs::{World, Entity};
 use macroquad::prelude::collections::storage;
+use macroquad_platformer::Tile;
 
-use crate::{GameInput, items::Weapon, Transform};
+use crate::{GameInput, items::Weapon, Transform, CollisionWorld};
+
+use super::{Player, PlayerInventory};
 
 struct Condition{
     function: Box<dyn Fn(i32) -> bool + Send + Sync>
@@ -43,7 +46,7 @@ struct Sequence{
 }
 
 impl Sequence{
-    fn create(children: Vec<Box<dyn BehaviourTreeNode>>, return_on_success: bool) -> Box<dyn BehaviourTreeNode>{
+    fn create(return_on_success: bool, children: Vec<Box<dyn BehaviourTreeNode>>) -> Box<dyn BehaviourTreeNode>{
         Box::new(Sequence{
             children,
             index: None,
@@ -66,7 +69,7 @@ impl BehaviourTreeNode for Sequence{
                     Some(true) // One has succeeded, return
                 }else if self.index.unwrap() == self.children.len(){
                     self.index = None;
-                    Some(!self.return_on_success)  // All children have at least tried to run
+                    Some(!self.return_on_success)  // All children have at tried to run. If it's supposed to return on success, this means it is a failure.
                 }else{
                     self.evaluate(world, ai, input) // Run next node immediately
                 }
@@ -91,7 +94,7 @@ struct ConditionNode{
 }
 
 impl ConditionNode{
-    fn create(condition: Box<dyn Fn(&World, &Ai) -> bool>, child: Box<dyn BehaviourTreeNode>, reevaluate: bool) -> Box<ConditionNode>{
+    fn create(reevaluate: bool, condition: Box<dyn Fn(&World, &Ai) -> bool>, child: Box<dyn BehaviourTreeNode>) -> Box<ConditionNode>{
         Box::new(ConditionNode{
             condition,
             child,
@@ -103,7 +106,7 @@ impl ConditionNode{
 
 impl BehaviourTreeNode for ConditionNode{
     fn evaluate(&mut self, world: &World, ai: &Ai, input: &mut GameInput) -> Option<bool> {
-        if self.reevaluate || !self.running{
+        if self.reevaluate || !self.running{ // Will only check if child is not running, or it is supposed to recheck every time
             //if(true){
             if (self.condition)(world, ai){
             
@@ -169,7 +172,9 @@ pub struct Ai {
     keep_direction_timeout: f32,
     fix_direction: i32,
     tree: Option<Box<dyn BehaviourTreeNode>>,
+    entity: Option<Entity>,
     player_id: u8,
+    ai_id: usize
 }
 
 /*impl<T: BehaviourTreeNode> std::fmt::Debug for T{
@@ -181,19 +186,20 @@ pub struct Ai {
  
 
 impl Ai {
-    pub fn create(id: u8) -> usize {
+    pub fn create(player_id: u8) -> usize {
         let mut ais = storage::get_mut::<Vec<Ai>>();
 
         let has_weapon_condition= |world: &World, ai: &Ai| {
-            let mut players = world.query::<(&crate::Transform, &super::Player, &super::PlayerController, &super::PlayerInventory)>();
+            world.query_one::<(&PlayerInventory, &Player)>(ai.entity.unwrap()).unwrap().get().unwrap().0.weapon.is_some()
+
+            /*let mut players = world.query::<(&crate::Transform, &super::Player, &super::PlayerController, &super::PlayerInventory)>();
             
-            let player = players.iter()
-            .find(|(e, (t, p, c, i))| {p.index == ai.player_id}).unwrap();
-
-            //player.0.to_bits();
-
-            player.1.3.weapon.is_some()
+            let player = players.iter().find(|(e, (t, p, c, i))| {p.index == ai.player_id}).unwrap();
+            
+            player.1.3.weapon.is_some()*/
         };
+
+        let ai_id = ais.len();
 
         ais.push(
             Ai {
@@ -204,43 +210,85 @@ impl Ai {
                 fix_direction: 0,
 
                 tree: Some(Sequence::create(
+                    true,
                     vec![
-                        ConditionNode::create( 
+                        ConditionNode::create( // If has weapon, try to shoot enemy
+                            true,
                             Box::new(has_weapon_condition),
                             Sequence::create(
+                                true,
                                 vec![
                                     //ConditionNode::create(condition, child, reevaluate)
-                                ],
-                                true
+                                    Behaviour::create(
+                                        Box::new(|world, ai, input|{
+                                            let mut player = world.query_one::<(&Transform, &Player)>(ai.entity.unwrap()).unwrap();
+                                            let player = player.get().unwrap();
+
+                                            let mut e = world.query::<(&Transform, &Player)>();
+                                            let mut enemies = e.iter().filter(|(_, (t, p))| {
+                                                (t.position.y - player.0.position.y).abs() < 20. && player.1.index != p.index && p.respawn_timer == 0.0
+                                            });
+
+                                            let collision = &mut storage::get_mut::<CollisionWorld>();
+
+                                            Some(enemies.find(|(_, (t, _))|{
+                                                let average = (player.0.position + t.position) /2.0;
+                                                let diff = (player.0.position - t.position);
+                                                if collision.collide_solids(average, diff.x.abs() as i32, 5) == Tile::Empty{
+                                                    if diff.x > 0.{
+                                                        input.left = true;
+                                                    }else{
+                                                        input.right = true;
+                                                    }
+                                                    input.fire = true;
+                                                    true
+                                                }else{
+                                                    false
+                                                }
+                                            }).is_none())
+                                        })
+                                    ),
+                                    Behaviour::create(
+                                        Box::new(|world, ai, input|{
+                                            // Wander
+                                            Some(true)
+                                        })
+                                    )
+                                ]
                             ),
-                            false 
                         ),
                         Sequence::create( // Get a weapon
+                            true,
                             vec![
-                                Behaviour::create(Box::new(|world, ai, input|{
-                                    let mut players = world.query::<(&Transform, &super::Player, &super::PlayerController, &super::PlayerInventory)>();
-                                    let player = players.iter().find(|(e, (t, p, c, i))| {p.index == ai.player_id}).unwrap();
+                                Inverter::create(Behaviour::create(Box::new(|world, ai, input|{
+                                    let mut p = world.query_one::<(&Transform)>(ai.entity.unwrap()).unwrap();
+                                    let player = p.get().unwrap();
+                                    //let player = world::query_one()
 
-                                    let mut min_d = 0.0;
+                                    let mut min_d = 999999.0;
                                     let mut weapons_source = world.query::<(&Transform, &Weapon)>();
-                                    let mut weapons = weapons_source.iter();
-                                    let mut target = match weapons.next() {
+                                    let mut target = None;
+                                    /*match weapons.next() {
                                         Some(val) => val.1,
                                         None => return Some(false),
-                                    };
-                                    for (i, w) in weapons{
-                                        let diff = w.0.position - player.1 .0.position;
+                                    };*/
+                                    for (i, w) in weapons_source.iter(){
+                                        let diff = w.0.position - player.position;
                                         //diff.x = diff.x.abs();
-                                        if min_d == 0. || diff.x.abs() + diff.y.abs()/3.0 < min_d{
-                                            min_d = diff.x + diff.y / 3.0;
-                                            target = w;
+                                        if diff.x.abs() + diff.y.abs()*3.0 < min_d{
+                                            min_d = diff.x.abs() + diff.y.abs() * 3.0;
+                                            target = Some(w);
                                         }
                                     }
 
-                                    if (target.0.position.x - player.1.0.position.x).abs() < 20.{
+                                    if target.is_none() {
+                                        return Some(false)
+                                    }
+
+                                    if (target.unwrap().0.position.x - player.position.x).abs() < 2.{
                                         Some(true)
                                     }else {
-                                        if target.0.position.x < player.1.0.position.x {
+                                        if target.unwrap().0.position.x < player.position.x {
                                             input.left = true;
                                         }else{
                                             input.right = true; 
@@ -251,34 +299,28 @@ impl Ai {
 
 
                                     //let target = weapons.sort_by|a, b| a.partial_cmp(b).unwrap_or(core::cmp::Ordering::Equal)).next();
-                                })),
+                                }))),
                                 Behaviour::create(Box::new(|world, ai, input|{
                                     input.pickup = true;
                                     Some(true)
                                 }))
-                            ],
-                            false // Keep running until all is done
+                            ]
                         )
-                    ],
-                    true
+                    ]
                 )),
-                player_id: id
+                player_id,
+                ai_id,
+                entity: None
             }
         );
-        ais.len() - 1
+        ai_id
     }
 
     pub fn update(&mut self, world: &World) -> GameInput {
-        let input = GameInput {
-            right: false,
-            left: true,
-            down: false,
-            jump: true,
-            float: false,
-            pickup: false,
-            fire: false,
-            slide: false,
-        };
+        if self.entity.is_none(){
+            let mut playerlikes = world.query::<&super::Player>();
+            self.entity = Some(playerlikes.iter().find(|(e, p)| {p.index == self.player_id}).unwrap().0);
+        }
 
         let mut i = GameInput{
             left: false,

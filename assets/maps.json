@@ -67,7 +67,6 @@
   },
   {
     "name": "campaign",
-    "description": "info?",
     "path": "maps\\campaign.json",
     "preview_path": "maps/no_preview.png",
     "is_user_map": true
