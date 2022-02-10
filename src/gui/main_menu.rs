@@ -13,7 +13,7 @@ use core::Id;
 use super::{draw_main_menu_background, GuiResources, Menu, MenuEntry, MenuResult, Panel};
 
 use crate::input::update_gamepad_context;
-use crate::network::Api;
+//use crate::network::Api;
 use crate::player::{PlayerControllerKind, PlayerParams, Ai};
 use crate::{gui, is_gamepad_btn_pressed, EditorInputScheme, GameInputScheme, Map, Resources};
 

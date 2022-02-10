@@ -15,6 +15,7 @@ mod events;
 mod inventory;
 mod state;
 mod ai;
+mod enemies;
 
 pub use animation::*;
 pub use character::*;
@@ -23,6 +24,7 @@ pub use events::*;
 pub use inventory::*;
 pub use state::*;
 pub use ai::*;
+pub use enemies::*;
 
 use crate::physics::PhysicsBodyParams;
 
@@ -53,6 +55,7 @@ pub struct PlayerParams {
     pub ai: bool,
 }
 
+/// The main component of a player. 
 pub struct Player {
     pub index: u8,
     pub state: PlayerState,
@@ -114,6 +117,7 @@ pub fn update_player_camera_box(world: &mut World) {
     }
 }
 
+/// Component containing data pertaining to a certain characters size, speed, jump height and similar
 #[derive(Debug, Clone)]
 pub struct PlayerAttributes {
     pub head_threshold: f32,

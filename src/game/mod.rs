@@ -266,12 +266,18 @@ pub fn spawn_map_objects(world: &mut World, map: &Map) -> Result<Vec<Entity>> {
                         }
                     }
                     MapObjectKind::Environment => {
-                        if map_object.id == "sproinger" {
-                            let sproinger = spawn_sproinger(world, map_object.position)?;
-                            objects.push(sproinger);
-                        } else {
-                            #[cfg(debug_assertions)]
-                            println!("WARNING: Invalid environment item id '{}'", &map_object.id)
+                        match map_object.id.as_str(){
+                            "sproinger" => {
+                                let sproinger = spawn_sproinger(world, map_object.position)?;
+                                objects.push(sproinger);
+                            },
+                            "mook" => {
+
+                            },
+                            _ => {
+                                #[cfg(debug_assertions)]
+                                println!("WARNING: Invalid environment item id '{}'", &map_object.id);
+                            }
                         }
                     }
                 }

@@ -188,7 +188,7 @@ impl Ai {
             let mut players = world.query::<(&crate::Transform, &super::Player, &super::PlayerController, &super::PlayerInventory)>();
             
             let player = players.iter()
-            .find(|(e, (t, p, c, i))| {p.0 == ai.player_id}).unwrap();
+            .find(|(e, (t, p, c, i))| {p.index == ai.player_id}).unwrap();
 
             //player.0.to_bits();
 
@@ -219,7 +219,7 @@ impl Ai {
                             vec![
                                 Behaviour::create(Box::new(|world, ai, input|{
                                     let mut players = world.query::<(&Transform, &super::Player, &super::PlayerController, &super::PlayerInventory)>();
-                                    let player = players.iter().find(|(e, (t, p, c, i))| {p.0 == ai.player_id}).unwrap();
+                                    let player = players.iter().find(|(e, (t, p, c, i))| {p.index == ai.player_id}).unwrap();
 
                                     let mut min_d = 0.0;
                                     let mut weapons_source = world.query::<(&Transform, &Weapon)>();
@@ -401,9 +401,3 @@ impl Ai {
         i
     }
 }
-
-// impl Default for Ai {
-//     fn default() -> Self {
-//         Self::new()
-//     }
-// }

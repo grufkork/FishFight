@@ -24,6 +24,8 @@ impl PlayerControllerKind {
     }
 }
 
+/// Component for handling input from different sources, such as keyboards, gamepads, network and AI.
+/// Essentially "puppeteers" a player-like character
 pub struct PlayerController {
     pub kind: PlayerControllerKind,
 
@@ -98,7 +100,7 @@ pub fn update_player_controllers(world: &mut World) {
                 // TODO: Network input
             }
             PlayerControllerKind::Ai(index) => {
-                controller.apply_input(gameinputs[index]);
+                controller.apply_input(gameinputs[*index]);
             },
         }
     }
