@@ -275,8 +275,8 @@ impl Ai {
                                     for (i, w) in weapons_source.iter(){
                                         let diff = w.0.position - player.position;
                                         //diff.x = diff.x.abs();
-                                        if diff.x.abs() + diff.y.abs()*3.0 < min_d{
-                                            min_d = diff.x.abs() + diff.y.abs() * 3.0;
+                                        if diff.x.abs() + diff.y.abs()*5.0 < min_d{
+                                            min_d = diff.x.abs() + diff.y.abs() * 5.0;
                                             target = Some(w);
                                         }
                                     }
